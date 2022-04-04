@@ -18,47 +18,40 @@ domain = get_command_line_argument
 # https://www.rubydoc.info/stdlib/core/IO:readlines
 dns_raw = File.readlines("zone")
 
-def singleArrayToHash(array)
-  records = {}
-  array.each do |item|
-    records[item[1]] = { rectype: item[0], destination: item[2] }
-  end
-  return records
-end
-
 def parse_dns(dns_raw)
-  stripped_dns = dns_raw.map do |line|
-    line.strip
+  dns_raw
+    .map { |line| line.strip }
+    .reject { |line| line.empty? }
+    .map { |line| line.split(", ") }
+    .filter do |record|
+    record[0] == "CNAME" || record[0] == "A"
   end
-  rejected_dns = stripped_dns.reject do |line|
-    line.empty? || line[0] == "#"
+    .each_with_object({}) do |record, records|
+    records[record[1]] = { type: record[0], target: record[2] }
   end
-  selected_dns = rejected_dns.map do |line|
-    line.split(", ")
-  end
-  filtered_dns = selected_dns.filter do |item|
-    item[0] == "CNAME" || item[0] == "A"
-  end
-  finalDNSHash = singleArrayToHash(filtered_dns)
-  return finalDNSHash
 end
 
 def resolve(dns_records, lookup_chain, domain)
-  if dns_records.has_key?(domain)
-    if dns_records[domain][:rectype] == "CNAME"
-      lookup_chain << dns_records[domain][:destination]
-      resolve(dns_records, lookup_chain, dns_records[domain][:destination])
-    elsif dns_records[domain][:rectype] == "A"
-      lookup_chain << dns_records[domain][:destination]
-      return lookup_chain
-    else
-      lookup_chain << "Record Type is Undefined!!!"
-    end
+  record = dns_records[domain]
+
+  if (!record)
+    lookup_chain << "Error: record not found for " + domain
+    return lookup_chain
+  elsif record[:type] == "CNAME"
+    lookup_chain << record[:target]
+    resolve(dns_records, lookup_chain, record[:target])
+  elsif record[:type] == "A"
+    lookup_chain << record[:target]
+    return lookup_chain
   else
-    lookup_chain << "Domain Record does not exist!!!"
+    lookup_chain << "Invalid record type for " + domain
+    return
   end
 end
 
+# To complete the assignment, implement `parse_dns` and `resolve`.
+# Remember to implement them above this line since in Ruby
+# you can invoke a function only after it is defined.
 dns_records = parse_dns(dns_raw)
 lookup_chain = [domain]
 lookup_chain = resolve(dns_records, lookup_chain, domain)
