@@ -8,35 +8,31 @@ class Todo
   end
 
   def overdue?
-    return @due_date < Date.today
-  end
-
-  def due_today?
-    return @due_date == Date.today
+    @due_date < Date.today
   end
 
   def due_later?
-    return @due_date > Date.today
+    @due_date > Date.today
+  end
+
+  def due_today?
+    @due_date == Date.today
   end
 
   def to_displayable_string
-    date_to_display = if due_today?
-        ""
-      else
-        @due_date
-      end
-    check_mark = if @completed
-        "[X]"
-      else
-        "[ ]"
-      end
-    return "#{check_mark} #{@text} #{date_to_display}"
+    checkbox = @completed ? "[x]" : "[ ]"
+    due_date = due_today? ? "" : @due_date
+    "#{checkbox} #{@text} #{due_date}"
   end
 end
 
 class TodosList
   def initialize(todos)
     @todos = todos
+  end
+
+  def add(todo)
+    @todos << todo
   end
 
   def overdue
@@ -52,20 +48,9 @@ class TodosList
   end
 
   def to_displayable_list
-    display_list = @todos.map do |todo|
-      todo.to_displayable_string
-    end
-    return display_list.join("\n")
-  end
-
-  def add(todo)
-    @todos.push(todo)
+    @todos.map { |todo| todo.to_displayable_string }.join("\n")
   end
 end
-
-# ####################################### #
-# DO NOT CHANGE ANYTHING BELOW THIS LINE. #
-# ####################################### #
 
 date = Date.today
 todos = [
